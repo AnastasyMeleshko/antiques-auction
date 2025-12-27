@@ -1,61 +1,77 @@
 # Antiques Auction API
 
-This is a **Node.js + Express** project for managing an online auction of antiques.  
-The API supports three main services: **BidService**, **AntiqueService**, and **DisputeService**, each with full CRUD operations. The database used is **SQL Server**, which can be run locally via Docker or hosted in Azure.
+This project is a **Node.js REST API** for managing an antiques auction platform. It provides endpoints to manage **users, antiques, auctions, bids, and disputes**, with data stored in **Azure SQL Database**.
 
 ---
 
 ## Table of Contents
 
-- [Project Structure](#project-structure)
-- [Setup Instructions](#setup-instructions)
-- [Database Setup](#database-setup)
-- [Services and CRUD Endpoints](#services-and-crud-endpoints)
-  - [BidService](#bidservice)
-  - [AntiqueService](#antiqueservice)
-  - [DisputeService](#disputeservice)
-- [Healthcheck](#healthcheck)
-- [Notes](#notes)
+1. [Technologies](#technologies)
+2. [Project Structure](#project-structure)
+3. [Database Schema](#database-schema)
+4. [Setup & Installation](#setup--installation)
+5. [Running the Server](#running-the-server)
+6. [Seeding Mock Data](#seeding-mock-data)
+7. [API Endpoints](#api-endpoints)
+8. [Testing](#testing)
+
+---
+
+## Technologies
+
+* **Node.js**
+* **Express.js** — REST API framework
+* **mssql** — Microsoft SQL Server client
+* **Azure SQL Database** — cloud database
+* **JavaScript (ES6 modules)**
 
 ---
 
 ## Project Structure
 
 ```
-
-/antiques-auction
-│
-├─ /src
-│   ├─ /services
-│   │   ├─ bidService.js
-│   │   ├─ antiqueService.js
-│   │   └─ disputeService.js
-│   ├─ db.js
-│   └─ server.js
-│
-├─ dbInit.js
-├─ tables.js
-├─ package.json
-└─ .gitignore
-
-````
-
-- **db.js** — database connection  
-- **server.js** — main Express server, mounts all services  
-- **/services/** — contains three services with their CRUD endpoints  
-- **dbInit.js** — creates the database  
-- **tables.js** — creates tables and inserts mock data  
+/src
+├── services
+│   ├── antiqueService.js   # CRUD operations for antiques
+│   ├── bidService.js       # CRUD operations for users (bids)
+│   └── disputeService.js   # CRUD operations for disputes
+├── db.js                   # Azure SQL connection setup
+├── seed.js                 # Script to populate database with mock data
+└── server.js               # Express server setup
+```
 
 ---
 
-## Setup Instructions
+## Database Schema
+
+The database `mialeshkaDB` contains the following tables and relationships:
+
+| Table   | Description                                       | Primary Key | Foreign Keys                                                      |
+| ------- | ------------------------------------------------- | ----------- | ----------------------------------------------------------------- |
+| User    | Stores basic user information                     | userId      | Auction.userId, Bid.userId                                        |
+| Antique | Represents antiques available for auction         | antiqueId   | Auction.antiqueId                                                 |
+| Auction | Represents an auction for a specific antique      | auctionId   | antiqueId → Antique, userId → User, leadingBidId → Bid (optional) |
+| Bid     | Stores bids placed by users on auctions           | bidId       | auctionId → Auction, userId → User                                |
+| Dispute | Represents disputes raised for a specific auction | disputeId   | auctionId → Auction                                               |
+
+**Relationships:**
+
+* One user can create multiple auctions and place multiple bids.
+* One antique can have multiple auctions.
+* One auction can have multiple bids and disputes.
+* Each bid belongs to one auction and one user.
+* Each dispute is linked to one auction.
+
+---
+
+## Setup & Installation
 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/AnastasyMeleshko/antiques-auction.git
-cd antiques-auction
-````
+git clone <your-repo-url>
+cd antiques-auction/src
+```
 
 2. Install dependencies:
 
@@ -63,157 +79,109 @@ cd antiques-auction
 npm install
 ```
 
-3. Create a `.env` file in the root:
+3. Configure Azure SQL connection in `db.js`:
 
-```
-USERDB=sa
-PASSWORD=YourPassword123!
-SERVER=localhost
-DATABASE=AntiquesAuctionDB
-PORT=1433
+```js
+export const config = {
+    user: "YOUR_SQL_LOGIN",
+    password: "YOUR_PASSWORD",
+    server: "YOUR_SERVER.database.windows.net",
+    database: "YOUR_DATABASE",
+    options: {
+        encrypt: true,
+        trustServerCertificate: false
+    }
+};
 ```
 
-4. Run SQL Server via Docker (local testing):
+> **Note:** It's recommended to use environment variables (`.env`) to store credentials.
+
+4. Make sure your **client IP is allowed** in Azure SQL firewall:
+
+* Go to Azure Portal → SQL server → Networking → Add your client IP.
+* Enable "Allow Azure services and resources to access this server".
+
+---
+
+## Running the Server
+
+Start the Express server:
 
 ```bash
-docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YourPassword123!" -p 1433:1433 --name sqlserver -d mcr.microsoft.com/mssql/server:2022-latest
+node server.js
 ```
 
-5. Initialize database and tables:
+Server runs on `http://localhost:3000`.
+
+**Healthcheck:**
+
+```
+GET /health
+Response: "API is healthy"
+```
+
+---
+
+## Seeding Mock Data
+
+`seed.js` populates the database with **sample users, antiques, auctions, bids, and disputes**.
+
+### Run the seeding script:
 
 ```bash
-node dbInit.js
-node tables.js
+node seed.js
 ```
 
-6. Start the server:
+✅ Expected output:
+
+```
+Connected to Azure SQL
+Seeding database...
+Database seeded successfully!
+```
+
+### Notes:
+
+* Seed script ensures proper order of insertion respecting **foreign keys**.
+* Automatically sets required **NOT NULL fields** such as:
+
+    * `Auction.startTime`, `Auction.endTime`, `Auction.status`
+    * `Bid.amount`, `Bid.status`, `Bid.timestamp`
+* Adds sample data for testing your API endpoints.
+
+---
+
+## API Endpoints
+
+### Antiques
+
+* `GET /antique/antiques` — list all antiques
+* `POST /antique/antiques` — create an antique
+* `PUT /antique/antiques/:id` — update antique
+* `DELETE /antique/antiques/:id` — delete antique
+
+### Users
+
+* `GET /bid/users` — list all users
+* `POST /bid/users` — create user
+* `PUT /bid/users/:id` — update user
+* `DELETE /bid/users/:id` — delete user
+
+### Disputes
+
+* `GET /dispute/disputes` — list all disputes
+* `POST /dispute/disputes` — create dispute
+
+---
+
+## Testing
+
+1. Use **Postman** or **curl** to test endpoints.
+2. Verify seeded data via **Azure Query Editor** or API GET endpoints:
 
 ```bash
-node src/server.js
+GET http://localhost:3000/antique/antiques
+GET http://localhost:3000/bid/users
+GET http://localhost:3000/dispute/disputes
 ```
-
-Server will run at: `http://localhost:3000`
-
----
-
-## Services and CRUD Endpoints
-
-### **BidService** (Users and Bids)
-
-#### Users
-
-* **GET /bid/users** — get all users
-* **POST /bid/users** — create user
-
-```json
-{
-  "name": "Alice",
-  "email": "alice@example.com",
-  "balance": 1000
-}
-```
-
-* **PUT /bid/users/:id** — update user
-
-```json
-{
-  "name": "Alice Updated",
-  "email": "alice.new@example.com",
-  "balance": 1200
-}
-```
-
-* **DELETE /bid/users/:id** — delete user
-
-#### Bids
-
-* **GET /bid/bids** — get all bids
-* **POST /bid/bids** — create bid
-
-```json
-{
-  "auction_id": 1,
-  "user_id": 1,
-  "amount": 500
-}
-```
-
-* **PUT /bid/bids/:id** — update bid
-
-```json
-{
-  "amount": 600
-}
-```
-
-* **DELETE /bid/bids/:id** — delete bid
-
----
-
-### **AntiqueService**
-
-* **GET /antique/antiques** — get all antiques
-* **POST /antique/antiques** — create antique
-
-```json
-{
-  "title": "Ancient Vase",
-  "category": "Ceramics",
-  "description": "Ming Dynasty",
-  "starting_price": 100
-}
-```
-
-* **PUT /antique/antiques/:id** — update antique
-
-```json
-{
-  "title": "Ancient Vase Updated",
-  "starting_price": 150
-}
-```
-
-* **DELETE /antique/antiques/:id** — delete antique (blocked if part of active auction)
-
----
-
-### **DisputeService**
-
-* **GET /dispute/disputes** — get all disputes
-* **POST /dispute/disputes** — create dispute
-
-```json
-{
-  "auction_id": 1,
-  "user_id": 1,
-  "reason": "Suspicious bid",
-  "evidence_url": "http://example.com/evidence",
-  "status": "open"
-}
-```
-
-* **PUT /dispute/disputes/:id** — update dispute status
-
-```json
-{
-  "status": "resolved"
-}
-```
-
-* **DELETE /dispute/disputes/:id** — delete dispute
-
----
-
-## Healthcheck
-
-* **GET /health** — checks API health (returns `API is healthy`)
-* **GET /** — root route, returns `Antiques Auction API running`
-
----
-
-## Notes
-
-* Make sure your **database column names match your queries** (`id`, `user_id`, `auction_id`, etc.)
-* Use **Postman** or **curl** to test all endpoints.
-* For production, set up **authentication**, logging, and message broker for disputes.
 
