@@ -10,10 +10,9 @@ This project is a **Node.js REST API** for managing an antiques auction platform
 2. [Project Structure](#project-structure)
 3. [Database Schema](#database-schema)
 4. [Setup & Installation](#setup--installation)
-5. [Running the Server](#running-the-server)
-6. [Seeding Mock Data](#seeding-mock-data)
-7. [API Endpoints](#api-endpoints)
-8. [Testing](#testing)
+5. [Seeding Mock Data](#seeding-mock-data)
+6. [API Endpoints](#api-endpoints)
+7. [Testing](#testing)
 
 ---
 
@@ -101,24 +100,7 @@ export const config = {
 * Go to Azure Portal → SQL server → Networking → Add your client IP.
 * Enable "Allow Azure services and resources to access this server".
 
----
-
-## Running the Server
-
-Start the Express server:
-
-```bash
-node server.js
-```
-
-Server runs on `http://localhost:3000`.
-
-**Healthcheck:**
-
-```
-GET /health
-Response: "API is healthy"
-```
+5. Deploy the Node.js API to your Azure App Service (or any cloud host). Configure environment variables there for DB credentials.
 
 ---
 
@@ -142,12 +124,12 @@ Database seeded successfully!
 
 ### Notes:
 
-* Seed script ensures proper order of insertion respecting **foreign keys**.
-* Automatically sets required **NOT NULL fields** such as:
+* Seed script respects **foreign key relationships**.
+* Automatically fills required **NOT NULL fields**:
 
-    * `Auction.startTime`, `Auction.endTime`, `Auction.status`
-    * `Bid.amount`, `Bid.status`, `Bid.timestamp`
-* Adds sample data for testing your API endpoints.
+  * `Auction.startTime`, `Auction.endTime`, `Auction.status`
+  * `Bid.amount`, `Bid.status`, `Bid.timestamp`
+* Adds sample data to test the API endpoints.
 
 ---
 
@@ -177,10 +159,11 @@ Database seeded successfully!
 ## Testing
 
 1. Use **Postman** or **curl** to test endpoints.
-2. Verify seeded data via **Azure Query Editor** or API GET endpoints:
+2. Verify seeded data via **Azure Query Editor** or API GET endpoints hosted on Azure.
 
 ```bash
-GET http://localhost:3000/antique/antiques
-GET http://localhost:3000/bid/users
-GET http://localhost:3000/dispute/disputes
+GET https://<your-azure-app-service-url>/antique/antiques
+GET https://<your-azure-app-service-url>/bid/users
+GET https://<your-azure-app-service-url>/dispute/disputes
 ```
+
