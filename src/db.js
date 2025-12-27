@@ -1,23 +1,22 @@
 import sql from "mssql";
 
 export const config = {
-    user: "sa",
-    password: "YourPassword123!",
-    server: "localhost",
-    port: 1433,
-    database: "AntiquesAuctionDB",
+    user: "nastassia.mialeshka",
+    password: "Sunlove1991$07",
+    server: "mialeshkasqlserver.database.windows.net",
+    database: "mialeshkaDB",
     options: {
-        encrypt: false,
-        trustServerCertificate: true,
-    },
+        encrypt: true,
+        trustServerCertificate: false
+    }
 };
 
 export const poolPromise = sql.connect(config)
     .then(pool => {
-        console.log("DB Connected");
+        console.log("Connected to Azure SQL");
         return pool;
     })
     .catch(err => {
-        console.error("DB Connection Failed", err);
+        console.error("Azure SQL Connection Failed", err);
         process.exit(1);
     });

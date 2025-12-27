@@ -3,47 +3,58 @@ import { poolPromise } from "../db.js";
 
 const router = express.Router();
 
-// GET все антиквариаты
+// GET all antiques
 router.get("/antiques", async (req, res) => {
     try {
         const pool = await poolPromise;
-        const result = await pool.request().query("SELECT * FROM Antiques");
+        const result = await pool.request().query("SELECT * FROM Antique");
         res.json(result.recordset);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// POST создать антиквариат
+// POST create antique
 router.post("/antiques", async (req, res) => {
     try {
-        const { title, category, description, starting_price } = req.body;
+        const { title, category, price, status } = req.body;
         const pool = await poolPromise;
+
         await pool.request()
             .input("title", title)
             .input("category", category)
-            .input("description", description)
-            .input("starting_price", starting_price)
-            .query("INSERT INTO Antiques (title, category, description, starting_price) VALUES (@title, @category, @description, @starting_price)");
+            .input("price", price)
+            .input("status", status)
+            .query(`
+                INSERT INTO Antique (title, category, price, status)
+                VALUES (@title, @category, @price, @status)
+            `);
+
         res.json({ message: "Antique created" });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// PUT обновить антиквариат
+// PUT update antique
 router.put("/antiques/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, category, description, starting_price } = req.body;
+        const { title, category, price, status } = req.body;
+
         const pool = await poolPromise;
+
         const result = await pool.request()
             .input("id", id)
             .input("title", title)
             .input("category", category)
-            .input("description", description)
-            .input("starting_price", starting_price)
-            .query("UPDATE Antiques SET title=@title, category=@category, description=@description, starting_price=@starting_price WHERE id=@id");
+            .input("price", price)
+            .input("status", status)
+            .query(`
+                UPDATE Antique
+                SET title=@title, category=@category, price=@price, status=@status
+                WHERE antiqueId=@id
+            `);
 
         if (result.rowsAffected[0] === 0) {
             res.status(404).json({ message: "Antique not found" });
@@ -55,14 +66,15 @@ router.put("/antiques/:id", async (req, res) => {
     }
 });
 
-// DELETE антиквариат
+// DELETE antique
 router.delete("/antiques/:id", async (req, res) => {
     try {
         const { id } = req.params;
         const pool = await poolPromise;
+
         const result = await pool.request()
             .input("id", id)
-            .query("DELETE FROM Antiques WHERE id=@id");
+            .query("DELETE FROM Antique WHERE antiqueId=@id");
 
         if (result.rowsAffected[0] === 0) {
             res.status(404).json({ message: "Antique not found" });
