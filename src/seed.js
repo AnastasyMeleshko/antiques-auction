@@ -40,27 +40,36 @@ async function seed() {
         const [clockId, spoonId, paintingId] = antiquesResult.recordset.map(a => a.antiqueId);
 
         // 3️⃣ Auctions
+
+        const now = new Date();
+        const later = new Date(now.getTime() + 24*60*60*1000); // +1 день
+        const defaultStatus = 'open'; // можно 'open' или 'active', зависит от схемы
+
         const auctionsResult = await pool.request().query(`
-            INSERT INTO Auction (antiqueId, userId)
-            OUTPUT INSERTED.auctionId
-            VALUES
-            (${clockId}, ${aliceId}),
-            (${spoonId}, ${bobId}),
-            (${paintingId}, ${charlieId});
-        `);
+    INSERT INTO Auction (antiqueId, userId, startTime, endTime, status)
+    OUTPUT INSERTED.auctionId
+    VALUES
+    (${clockId}, ${aliceId}, '${now.toISOString()}', '${later.toISOString()}', '${defaultStatus}'),
+    (${spoonId}, ${bobId}, '${now.toISOString()}', '${later.toISOString()}', '${defaultStatus}'),
+    (${paintingId}, ${charlieId}, '${now.toISOString()}', '${later.toISOString()}', '${defaultStatus}');
+`);
 
         const [auction1Id, auction2Id, auction3Id] =
             auctionsResult.recordset.map(a => a.auctionId);
 
-        // 4️⃣ Bids
+
+// 4️⃣ Bids
+        const defaultBidStatus = 'active'; // статус для всех ставок
+        const nowTimestamp = new Date().toISOString(); // timestamp для всех ставок
+
         const bidsResult = await pool.request().query(`
-            INSERT INTO Bid (auctionId, userId, amount)
-            OUTPUT INSERTED.bidId
-            VALUES
-            (${auction1Id}, ${bobId}, 130.00),
-            (${auction1Id}, ${charlieId}, 150.00),
-            (${auction2Id}, ${aliceId}, 50.00);
-        `);
+    INSERT INTO Bid (auctionId, userId, amount, status, timestamp)
+    OUTPUT INSERTED.bidId
+    VALUES
+    (${auction1Id}, ${bobId}, 130.00, '${defaultBidStatus}', '${nowTimestamp}'),
+    (${auction1Id}, ${charlieId}, 150.00, '${defaultBidStatus}', '${nowTimestamp}'),
+    (${auction2Id}, ${aliceId}, 50.00, '${defaultBidStatus}', '${nowTimestamp}');
+`);
 
         const [bid1Id] = bidsResult.recordset.map(b => b.bidId);
 
